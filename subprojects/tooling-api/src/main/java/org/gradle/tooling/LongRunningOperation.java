@@ -15,6 +15,7 @@
  */
 package org.gradle.tooling;
 
+import org.gradle.api.Incubating;
 import org.gradle.tooling.events.OperationType;
 
 import javax.annotation.Nullable;
@@ -119,6 +120,17 @@ public interface LongRunningOperation {
      * @since 5.0
      */
     LongRunningOperation addJvmArguments(String... jvmArguments);
+
+
+    /**
+     * Sets additional system properties for the build.
+     *
+     * @param systemProperties the system properties add to the Gradle process
+     * @return this
+     * @since 7.6
+     */
+    @Incubating
+    LongRunningOperation withSystemProperties(Map<String, String> systemProperties);
 
     /**
      * Appends Java VM arguments to the existing list.
