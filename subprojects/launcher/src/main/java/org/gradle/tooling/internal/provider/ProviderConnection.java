@@ -261,7 +261,7 @@ public class ProviderConnection {
         if (Boolean.TRUE.equals(operationParameters.isEmbedded())) {
             loggingManager = sharedServices.getFactory(LoggingManagerInternal.class).create();
             loggingManager.captureSystemSources();
-            executer = new StdInSwapExecuter(standardInput, embeddedExecutor);
+            executer = new SystemPropertySetterExecuter(new StdInSwapExecuter(standardInput, embeddedExecutor));
         } else {
             LoggingServiceRegistry loggingServices = LoggingServiceRegistry.newNestedLogging();
             loggingManager = loggingServices.getFactory(LoggingManagerInternal.class).create();

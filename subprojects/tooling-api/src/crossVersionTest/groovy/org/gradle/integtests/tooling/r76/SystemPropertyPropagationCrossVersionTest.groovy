@@ -28,7 +28,6 @@ class SystemPropertyPropagationCrossVersionTest extends ToolingApiSpecification 
     OutputStream out
 
     def setup() {
-        toolingApi.requireDaemons()
         out = new ByteArrayOutputStream()
         System.setProperty('mySystemProperty', 'defined in the client JVM')
         buildFile << '''
@@ -60,6 +59,9 @@ class SystemPropertyPropagationCrossVersionTest extends ToolingApiSpecification 
     }
 
     def "Client JVM system properties do not appear in the build if withSystemProperties() is called"() {
+        setup:
+        toolingApi.requireDaemons() // no separate daemon JVM -> all client JVM system properties are expected to be visible
+
         when:
         runTask { withSystemProperties('unrelated' : 'value') }
 
@@ -79,6 +81,9 @@ class SystemPropertyPropagationCrossVersionTest extends ToolingApiSpecification 
     }
 
     def "Passing an empty map to withSystemProperties() hides all client system properties"() {
+        setup:
+        toolingApi.requireDaemons() // no separate daemon JVM -> all client JVM system properties are expected to be visible
+
         when:
         runTask { withSystemProperties([:]) }
 
@@ -114,6 +119,9 @@ class SystemPropertyPropagationCrossVersionTest extends ToolingApiSpecification 
     }
 
     def "Cannot modify immutable system properties"() {
+        setup:
+        toolingApi.requireDaemons() // no separate daemon JVM -> no immutable system properties
+
         when:
         String customTmpDir = System.getProperty('java.io.tmpdir') + System.getProperty('path.separator') + 'custom'
         runTask {

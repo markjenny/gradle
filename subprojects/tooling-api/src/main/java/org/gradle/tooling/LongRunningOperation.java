@@ -121,7 +121,6 @@ public interface LongRunningOperation {
      */
     LongRunningOperation addJvmArguments(String... jvmArguments);
 
-
     /**
      * Sets additional system properties for the build.
      *
