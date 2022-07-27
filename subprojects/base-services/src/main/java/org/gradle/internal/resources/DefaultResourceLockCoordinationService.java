@@ -16,6 +16,7 @@
 
 package org.gradle.internal.resources;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -113,11 +114,7 @@ public class DefaultResourceLockCoordinationService implements ResourceLockCoord
                         case RETRY:
                             resourceLockState.releaseLocks();
                             maybeNotifyStateChange(resourceLockState);
-                            try {
-                                lock.wait();
-                            } catch (InterruptedException e) {
-                                throw UncheckedException.throwAsUncheckedException(e);
-                            }
+                            doWait();
                             break;
                         case FINISHED:
                             maybeNotifyStateChange(resourceLockState);
@@ -135,6 +132,15 @@ public class DefaultResourceLockCoordinationService implements ResourceLockCoord
                     currentState.get().remove(resourceLockState);
                 }
             }
+        }
+    }
+
+    @VisibleForTesting
+    protected void doWait() {
+        try {
+            lock.wait();
+        } catch (InterruptedException e) {
+            throw UncheckedException.throwAsUncheckedException(e);
         }
     }
 

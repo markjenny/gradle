@@ -18,10 +18,6 @@ package org.gradle.execution.plan
 
 import org.gradle.StartParameter
 import org.gradle.api.Action
-import org.gradle.api.Project
-import org.gradle.api.internal.TaskInternal
-import org.gradle.api.internal.tasks.TaskStateInternal
-import org.gradle.api.invocation.Gradle
 import org.gradle.initialization.BuildCancellationToken
 import org.gradle.internal.concurrent.DefaultParallelismConfiguration
 import org.gradle.internal.concurrent.ExecutorFactory
@@ -35,20 +31,18 @@ class DefaultPlanExecutorTest extends Specification {
     def worker = Mock(Action)
     def executorFactory = Mock(ExecutorFactory)
     def cancellationHandler = Mock(BuildCancellationToken)
-    def coordinationService = new DefaultResourceLockCoordinationService()
+    def coordinationService = new DefaultResourceLockCoordinationService() {
+        @Override
+        protected void doWait() {
+        }
+    }
     def workerLeaseService = Mock(WorkerLeaseService)
     def workerLease = Mock(WorkerLeaseRegistry.WorkerLease)
     def executor = new DefaultPlanExecutor(new DefaultParallelismConfiguration(false, 1), executorFactory, workerLeaseService, cancellationHandler, coordinationService, Stub(StartParameter))
 
-    def "executes tasks until no further tasks remain"() {
-        def gradle = Mock(Gradle)
-        def project = Mock(Project)
-        def node = Mock(LocalTaskNode)
-        def task = Mock(TaskInternal)
-        def state = Mock(TaskStateInternal)
-        project.gradle >> gradle
-        task.project >> project
-        task.state >> state
+    def "executes items until no further items remain"() {
+        def node1 = Mock(LocalTaskNode)
+        def node2 = Mock(LocalTaskNode)
 
         when:
         def result = executor.process(workSource, worker)
@@ -57,6 +51,79 @@ class DefaultPlanExecutorTest extends Specification {
         result.failures.empty
 
         1 * workerLeaseService.currentWorkerLease >> workerLease
+
+        then:
+        1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workerLease.tryLock() >> true
+        1 * workSource.selectNext() >> WorkSource.Selection.of(node1)
+
+        then:
+        1 * worker.execute(node1)
+
+        then:
+        1 * workSource.finishedExecuting(node1, null)
+        1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workSource.selectNext() >> WorkSource.Selection.of(node2)
+        1 * workSource.executionState() >> WorkSource.State.MaybeWorkReadyToStart
+
+        then:
+        1 * worker.execute(node2)
+
+        then:
+        1 * workSource.finishedExecuting(node2, null)
+        1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
+
+        1 * workerLease.tryLock() >> true
+        3 * workSource.allExecutionComplete() >> true
+        1 * workSource.collectFailures([])
+        0 * workSource._
+        0 * workerLease._
+    }
+
+    def "item queue can be empty"() {
+        when:
+        def result = executor.process(workSource, worker)
+
+        then:
+        result.failures.empty
+
+        1 * workerLeaseService.currentWorkerLease >> workerLease
+
+        then:
+        1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workerLease.tryLock() >> true
+        1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
+
+        1 * workerLease.tryLock() >> true
+        3 * workSource.allExecutionComplete() >> true
+        1 * workSource.collectFailures([])
+        0 * workSource._
+        0 * workerLease._
+    }
+
+    def "waits until an item is ready for execution"() {
+        def node = Mock(LocalTaskNode)
+
+        when:
+        def result = executor.process(workSource, worker)
+
+        then:
+        result.failures.empty
+
+        1 * workerLeaseService.currentWorkerLease >> workerLease
+
+        then:
+        1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workerLease.tryLock() >> true
+        1 * workSource.selectNext() >> WorkSource.Selection.noWorkReadyToStart()
+
+        then:
+        1 * workerLease.unlock()
+        1 * workSource.executionState() >> WorkSource.State.NoWorkReadyToStart
+        1 * workerLease.unlock()
+        1 * workSource.executionState() >> WorkSource.State.MaybeWorkReadyToStart
+        1 * workerLease.tryLock() >> true
 
         then:
         1 * cancellationHandler.isCancellationRequested() >> false
@@ -71,25 +138,91 @@ class DefaultPlanExecutorTest extends Specification {
         1 * cancellationHandler.isCancellationRequested() >> false
         1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
 
-        // get rid of these
+        1 * workerLease.tryLock() >> true
+        3 * workSource.allExecutionComplete() >> true
+        1 * workSource.collectFailures([])
+        0 * workSource._
+        0 * workerLease._
+    }
+
+    def "waits until worker lease is available"() {
+        def node = Mock(LocalTaskNode)
+
+        when:
+        def result = executor.process(workSource, worker)
+
+        then:
+        result.failures.empty
+
+        1 * workerLeaseService.currentWorkerLease >> workerLease
+
+        then:
+        1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workerLease.tryLock() >> false
+
+        then:
+        1 * workerLease.unlock()
+        1 * workSource.executionState() >> WorkSource.State.MaybeWorkReadyToStart
+        1 * workerLease.tryLock() >> false
+        1 * workerLease.unlock()
+        1 * workSource.executionState() >> WorkSource.State.MaybeWorkReadyToStart
+        1 * workerLease.tryLock() >> true
+
+        then:
         1 * cancellationHandler.isCancellationRequested() >> false
         1 * workerLease.tryLock() >> true
+        1 * workSource.selectNext() >> WorkSource.Selection.of(node)
+
+        then:
+        1 * worker.execute(node)
+
+        then:
+        1 * workSource.finishedExecuting(node, null)
+        1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
 
         1 * workerLease.tryLock() >> true
         3 * workSource.allExecutionComplete() >> true
         1 * workSource.collectFailures([])
         0 * workSource._
+        0 * workerLease._
     }
 
-    def "execution is canceled when cancellation requested"() {
-        def gradle = Mock(Gradle)
-        def project = Mock(Project)
+    def "work item may be stolen by another worker"() {
+        when:
+        def result = executor.process(workSource, worker)
+
+        then:
+        result.failures.empty
+
+        1 * workerLeaseService.currentWorkerLease >> workerLease
+
+        then:
+        1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workerLease.tryLock() >> true
+        1 * workSource.selectNext() >> WorkSource.Selection.noWorkReadyToStart()
+
+        then:
+        1 * workerLease.unlock()
+        1 * workSource.executionState() >> WorkSource.State.NoWorkReadyToStart
+        1 * workerLease.unlock()
+        1 * workSource.executionState() >> WorkSource.State.MaybeWorkReadyToStart
+        1 * workerLease.tryLock() >> true
+
+        then:
+        1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workerLease.tryLock() >> true
+        1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
+
+        1 * workerLease.tryLock() >> true
+        3 * workSource.allExecutionComplete() >> true
+        1 * workSource.collectFailures([])
+        0 * workSource._
+        0 * workerLease._
+    }
+
+    def "execution is canceled when cancellation requested while an item is executing"() {
         def node = Mock(LocalTaskNode)
-        def task = Mock(TaskInternal)
-        def state = Mock(TaskStateInternal)
-        project.gradle >> gradle
-        task.project >> project
-        task.state >> state
 
         when:
         def result = executor.process(workSource, worker)
@@ -110,13 +243,10 @@ class DefaultPlanExecutorTest extends Specification {
         1 * workSource.cancelExecution()
         1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
 
-        // get rid of these
-        1 * cancellationHandler.isCancellationRequested() >> false
-        1 * workerLease.tryLock() >> true
-
         1 * workerLease.tryLock() >> true
         3 * workSource.allExecutionComplete() >> true
         1 * workSource.collectFailures([])
         0 * workSource._
+        0 * workerLease._
     }
 }
