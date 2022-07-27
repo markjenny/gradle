@@ -74,6 +74,7 @@ class DefaultPlanExecutorTest extends Specification {
         1 * cancellationHandler.isCancellationRequested() >> false
         1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
 
+        then:
         1 * workerLease.tryLock() >> true
         3 * workSource.allExecutionComplete() >> true
         1 * workSource.collectFailures([])
@@ -95,6 +96,7 @@ class DefaultPlanExecutorTest extends Specification {
         1 * workerLease.tryLock() >> true
         1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
 
+        then:
         1 * workerLease.tryLock() >> true
         3 * workSource.allExecutionComplete() >> true
         1 * workSource.collectFailures([])
@@ -136,8 +138,18 @@ class DefaultPlanExecutorTest extends Specification {
         then:
         1 * workSource.finishedExecuting(node, null)
         1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workSource.selectNext() >> WorkSource.Selection.noWorkReadyToStart()
+        1 * workerLease.unlock()
+        1 * workSource.executionState() >> WorkSource.State.NoWorkReadyToStart
+        1 * workerLease.unlock()
+        1 * workSource.executionState() >> WorkSource.State.MaybeWorkReadyToStart
+        1 * workerLease.tryLock() >> true
+
+        1 * cancellationHandler.isCancellationRequested() >> false
+        1 * workerLease.tryLock() >> true
         1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
 
+        then:
         1 * workerLease.tryLock() >> true
         3 * workSource.allExecutionComplete() >> true
         1 * workSource.collectFailures([])
@@ -181,6 +193,7 @@ class DefaultPlanExecutorTest extends Specification {
         1 * cancellationHandler.isCancellationRequested() >> false
         1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
 
+        then:
         1 * workerLease.tryLock() >> true
         3 * workSource.allExecutionComplete() >> true
         1 * workSource.collectFailures([])
@@ -214,6 +227,7 @@ class DefaultPlanExecutorTest extends Specification {
         1 * workerLease.tryLock() >> true
         1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
 
+        then:
         1 * workerLease.tryLock() >> true
         3 * workSource.allExecutionComplete() >> true
         1 * workSource.collectFailures([])
@@ -243,6 +257,7 @@ class DefaultPlanExecutorTest extends Specification {
         1 * workSource.cancelExecution()
         1 * workSource.selectNext() >> WorkSource.Selection.noMoreWorkToStart()
 
+        then:
         1 * workerLease.tryLock() >> true
         3 * workSource.allExecutionComplete() >> true
         1 * workSource.collectFailures([])
