@@ -465,7 +465,7 @@ BUILD SUCCESSFUL"""
         when:
         fails "help", "--task", "bTask"
         then:
-        failure.assertHasCause("Task 'bTask' not found in root project '${testDirectory.getName()}'. Some candidates are: 'aTask', 'tasks'")
+        failure.assertHasDescription("Task 'bTask' not found in root project '${testDirectory.getName()}'. Some candidates are: 'aTask', 'tasks'")
     }
 
     def "tasks can be defined by camelCase matching"() {
