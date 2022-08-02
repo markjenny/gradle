@@ -27,7 +27,18 @@ import java.util.function.BiFunction;
 /**
  * <p>The internal view of a {@link Provider}.</p>
  *
- * <p>A {@code Provider<T>} has several different pieces of state associated with it. The first such state is the "value" of the provider, which is the object returned by {@link #get()} and its variants.
+ * <p>A {@code Provider<T>} has several different pieces of state associated with it:</p>
+ *
+ * <ul>
+ *     <li>The "value" of the provider, which is the object returned by {@link #get()} and its variants.</li>
+ *     <li>the "content" of the value. The value points to some object, but this object may not be immutable even though the value is fixed.
+ *     For example, when the value is a {@code File} object, the state of that file in the file system may change. This mutable state is the "content" of the value.</li>
+ * </ul>
+ *
+ * <p>In other words, a provider does not provide a value, it provides a value whose content is in a particular state. This is discussed in more detail below.</p>
+ *
+ * <h1>The provider value</h1>
+ *
  * The value of a provider may be:</p>
  *
  * <ul>
@@ -46,6 +57,8 @@ import java.util.function.BiFunction;
  *     </li>
  * </ul>
  *
+ * <p>See {@link org.gradle.api.internal.provider.ValueSupplier.ExecutionTimeValue}, which represents these states.</p>
+ *
  * <p>The value itself might be "missing", which means there is no value available, or "broken", which means the calculation failed with some exception, or some object.</p>
  *
  * <p>Currently these "fixed" and "changing" states have definitions that refer to configuration time and execution time.
@@ -54,9 +67,10 @@ import java.util.function.BiFunction;
  * fixed once the task has executed. It would become an error to query a provider whose value is still "changing".
  * </p>
  *
- * <p>The second piece of state is the "content" of the value. The value points to some object, but this object may not be immutable even though the value is fixed. For example, when the value is
- * a {@code File} object, the state of that file in the file system may change. This mutable state is the "content" of the value. Each provider guarantees that the content of the value is in some
- * particular state when the provider is queried. Currently there are only two states that the various provider implementations can guarantee:
+ * <h1>The value content</h1>
+ *
+ * <p>Each provider guarantees that the content of the value is in some particular state when the provider is queried.
+ * Currently there are only two states that the various provider implementations can guarantee:
  * </p>
  *
  * <ul>
