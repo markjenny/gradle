@@ -46,10 +46,6 @@ class CodeNarcInvoker implements Action<AntBuilderDelegate> {
         def ignoreFailures = parameters.ignoreFailures.get()
         def source = parameters.source
 
-        // TODO: How do I configure the logging of a worker from the worker API?
-//        def logging = parameters.logging.get()
-//        logging.captureStandardOutput(LogLevel.INFO)
-
         ant.taskdef(name: 'codenarc', classname: 'org.codenarc.ant.CodeNarcTask')
         try {
             ant.codenarc(ruleSetFiles: "file:${configFile}", maxPriority1Violations: maxPriority1Violations, maxPriority2Violations: maxPriority2Violations, maxPriority3Violations: maxPriority3Violations) {
