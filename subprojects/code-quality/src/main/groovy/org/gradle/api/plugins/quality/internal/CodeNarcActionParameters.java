@@ -23,6 +23,9 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.workers.WorkParameters;
 
+/**
+ * Parameters used to configure a {@link CodeNarcAction}.
+ */
 public interface CodeNarcActionParameters extends WorkParameters {
 
     ConfigurableFileCollection getCompilationClasspath();

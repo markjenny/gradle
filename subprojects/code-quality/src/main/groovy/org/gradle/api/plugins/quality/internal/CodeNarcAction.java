@@ -19,6 +19,9 @@ package org.gradle.api.plugins.quality.internal;
 import org.gradle.api.Action;
 import org.gradle.api.internal.project.antbuilder.AntBuilderDelegate;
 
+/**
+ * Action to be run via the Worker API which executes a CodeNarc Ant task.
+ */
 public abstract class CodeNarcAction extends AntWorkAction<CodeNarcActionParameters> {
 
     @Override

@@ -25,6 +25,10 @@ import org.gradle.test.fixtures.file.TestFile
 
 import static org.junit.Assume.assumeNotNull
 
+/**
+ * Tests to ensure toolchains specified by the {@code CodeNarcPlugin} and
+ * {@code CodeNarc} tasks behave as expected.
+ */
 @TargetCoverage({ CodeNarcCoverage.getSupportedVersionsByJdk() })
 class CodeNarcPluginToolchainsIntegrationTest extends MultiVersionIntegrationSpec{
     def setup() {
