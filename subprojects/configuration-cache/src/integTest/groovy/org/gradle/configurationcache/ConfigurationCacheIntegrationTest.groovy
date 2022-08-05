@@ -25,7 +25,7 @@ import spock.lang.Issue
 
 class ConfigurationCacheIntegrationTest extends AbstractConfigurationCacheIntegrationTest {
 
-    def "configuration cache for '#task' on empty project"() {
+    def "configuration cache for Help plugin task '#task' on empty project"() {
         given:
         settingsFile.createFile()
         configurationCacheRun(task, *options)

@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
  */
 @NonNullApi
 class TaskDetails {
-
     public static class Comparator implements java.util.Comparator<TaskDetails> {
         @Override
         public int compare(TaskDetails o1, TaskDetails o2) {

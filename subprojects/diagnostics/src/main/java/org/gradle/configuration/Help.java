@@ -16,10 +16,12 @@
 package org.gradle.configuration;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Task;
 import org.gradle.api.internal.DocumentationRegistry;
 import org.gradle.api.internal.tasks.options.OptionReader;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.provider.ListProperty;
+import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.api.tasks.options.Option;
 import org.gradle.execution.TaskSelection;
@@ -33,15 +35,21 @@ import org.gradle.work.DisableCachingByDefault;
 
 import javax.inject.Inject;
 
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.gradle.internal.logging.text.StyledTextOutput.Style.UserInput;
 
 @DisableCachingByDefault(because = "Produces only non-cacheable console output")
 public class Help extends DefaultTask {
-    private String taskPath;
+    private final Property<String> taskPath = getObjectFactory().property(String.class);
 
-    private ListProperty<TaskDetails> tasks = getObjectFactory().listProperty(TaskDetails.class);
+    private final Provider<TaskDetailsModel> taskModel = getTaskPath().map(this::mapFromTaskPath);
+
+    private Property<String> getTaskPath() {
+        return taskPath;
+    }
 
     @Inject
     protected ObjectFactory getObjectFactory() {
@@ -82,7 +90,7 @@ public class Help extends DefaultTask {
     void displayHelp() {
         StyledTextOutput output = getTextOutputFactory().create(Help.class);
         BuildClientMetaData metaData = getClientMetaData();
-        if (taskPath != null) {
+        if (getTaskPath().isPresent()) {
             printTaskHelp(output);
         } else {
             printDefaultHelp(output, metaData);
@@ -90,7 +98,8 @@ public class Help extends DefaultTask {
     }
 
     private void printTaskHelp(StyledTextOutput output) {
-        TaskDetailPrinter taskDetailPrinter = new TaskDetailPrinter(taskPath, tasks.get());
+        TaskDetailsModel taskDetailModel = taskModel.get();
+        TaskDetailPrinter taskDetailPrinter = new TaskDetailPrinter(taskDetailModel.getTaskPath(), taskDetailModel.getTasks());
         taskDetailPrinter.print(output);
     }
 
@@ -144,14 +153,15 @@ public class Help extends DefaultTask {
 
     @Option(option = "task", description = "The task to show help for.")
     public void setTaskPath(String taskPath) {
-        this.taskPath = taskPath;
-        setTasksForPath(taskPath);
+        this.getTaskPath().set(taskPath);
     }
-
-    private void setTasksForPath(String taskPath) {
+    
+    private TaskDetailsModel mapFromTaskPath(String taskPath) {
         OptionReader optionReader = getOptionReader();
         TaskSelection selection = getTaskSelector().getSelection(taskPath);
-        tasks.set(selection.getTasks().stream().map(t -> TaskDetails.from(t, optionReader)).collect(Collectors.toList()));
+        Stream<Task> selectedTasks = selection.getTasks().stream();
+        List<TaskDetails> tasks = selectedTasks.map(t -> TaskDetails.from(t, optionReader)).collect(Collectors.toList());
+        return new TaskDetailsModel(taskPath, tasks);
     }
 
 }
