@@ -16,13 +16,17 @@
 
 package org.gradle.api.plugins.quality.internal;
 
+import org.gradle.internal.classloader.VisitableURLClassLoader;
 import org.gradle.workers.WorkAction;
 import org.gradle.workers.WorkParameters;
+
+import java.util.Arrays;
 
 public abstract class MyTestAction implements WorkAction<WorkParameters.None> {
     @Override
     public void execute() {
         // Make the ClassLoader "dirty" by trying to load something from it
         Thread.currentThread().getContextClassLoader().getResource("abc");
+        System.out.println(Arrays.asList(((VisitableURLClassLoader)Thread.currentThread().getContextClassLoader()).getURLs()));
     }
 }

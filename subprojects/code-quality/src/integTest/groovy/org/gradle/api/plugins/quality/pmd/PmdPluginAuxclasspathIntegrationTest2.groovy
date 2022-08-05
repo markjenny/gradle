@@ -16,11 +16,15 @@
 package org.gradle.api.plugins.quality.pmd
 
 import org.gradle.integtests.fixtures.AbstractIntegrationSpec
+import org.gradle.test.fixtures.file.TestFile
 
 class PmdPluginAuxclasspathIntegrationTest2 extends AbstractIntegrationSpec {
 
     def "Reproduce the bug!"() {
 
+        settingsFile """
+            rootProject.name = "root"
+        """
         buildFile("""
             plugins {
                 id 'java'
