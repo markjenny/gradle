@@ -1561,7 +1561,7 @@ public abstract class AbstractGradleExecuter implements GradleExecuter, Resettab
                 GFileUtils.parentMkdirs(leakDetectorJar);
                 GFileUtils.touch(leakDetectorJar);
                 try (OutputStream out = Files.newOutputStream(leakDetectorJar.toPath());
-                     InputStream in = new URL(leakDetectorUrl).openStream()) {
+                    InputStream in = new URL(leakDetectorUrl).openStream()) {
                     ByteStreams.copy(in, out);
                 } catch (IOException e) {
                     throw new RuntimeException("Couldn't download " + leakDetectorUrl, e);
